@@ -26,7 +26,7 @@ def test_extract_json_failure():
 
 def test_cache_hit_avoids_network(tmp_path):
     """A cached response is returned without any vendor SDK/network involvement."""
-    import hashlib, json
+    import json
     client = make_client("anthropic", "some-model", cache_dir=str(tmp_path))
     key = client._cache_key("sys", "user", 100)
     key.parent.mkdir(parents=True, exist_ok=True)

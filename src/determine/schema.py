@@ -11,7 +11,7 @@ from __future__ import annotations
 import enum
 import hashlib
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from pydantic import BaseModel, Field
 
@@ -25,18 +25,18 @@ def span_hash(text: str) -> str:
 
 
 def utcnow() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 # ── Verdicts ────────────────────────────────────────────────────────────────
 
-class VerdictLabel(str, enum.Enum):
+class VerdictLabel(enum.StrEnum):
     SUPPORTED = "SUPPORTED"
     REFUTED = "REFUTED"
     NEI = "NOT-ENOUGH-EVIDENCE"
 
 
-class NEIReason(str, enum.Enum):
+class NEIReason(enum.StrEnum):
     NO_EVIDENCE = "no_evidence"
     CONFLICT = "conflict"
     BUDGET_EXHAUSTED = "budget_exhausted"
@@ -63,7 +63,7 @@ class Verdict(BaseModel):
 
 # ── Plan (Stage A decomposition) ────────────────────────────────────────────
 
-class StepType(str, enum.Enum):
+class StepType(enum.StrEnum):
     GROUND = "GROUND"
     GATHER = "GATHER"
     COMPUTE = "COMPUTE"
@@ -100,7 +100,7 @@ class EntityCard(BaseModel):
 
 # ── Claims (Stage B decomposition) ──────────────────────────────────────────
 
-class ClaimType(str, enum.Enum):
+class ClaimType(enum.StrEnum):
     REPORT = "report"
     NUMERIC = "numeric"
     COMPARATIVE = "comparative"

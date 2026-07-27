@@ -10,17 +10,24 @@ retriever handle — the wiring below never passes it the answer, citations, or 
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 from determine.config import Settings
 from determine.retrieve.bm25 import Retriever
 from determine.schema import (
-    Answer, Claim, ClaimType, EntityCard, NeedsComputation, NEIReason, PlanStep,
-    RetrievalRecord, RunState, StepType, Verdict, VerdictLabel,
+    Answer,
+    Claim,
+    ClaimType,
+    EntityCard,
+    NEIReason,
+    PlanStep,
+    RetrievalRecord,
+    RunState,
+    StepType,
+    Verdict,
+    VerdictLabel,
 )
 from determine.verify.guards import quote_substring_check
-
 
 # ── nodes ───────────────────────────────────────────────────────────────────
 
