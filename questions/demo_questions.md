@@ -1,0 +1,12 @@
+# Determine — MVP demo question set (10, hep-ph)
+
+1. Do current reactor experiments rule out the sterile-neutrino explanation of the reactor antineutrino anomaly? (exclusion-vs-claim)
+2. Is the CDF II W-boson mass measurement consistent with the SM electroweak fit and other measurements? (numeric tension)
+3. What does the lattice HVP calculation imply for the muon g−2 discrepancy? (convention-conflict)
+4. Did the 2022 LHCb update of R(K) and R(K*) remove the evidence for lepton-flavor universality violation in b→sℓℓ decays? (binary, clean)
+5. Has the XENON1T electron-recoil excess been confirmed or excluded? (binary, clean)
+6. What sterile-neutrino parameter space remains viable for the gallium anomaly after the BEST experiment? (quantitative survey)
+7. Is the MiniBooNE low-energy excess explained by an eV-scale sterile neutrino, given MicroBooNE results? (multi-experiment synthesis)
+8. Does a ~95 GeV Higgs-like diphoton excess persist consistently across CMS and ATLAS analyses? (abstention stress test)
+9. What are the strongest collider limits on GeV-scale heavy neutral leptons? (survey)
+10. Do LHC results exclude natural weak-scale supersymmetry? (abstention/hedging stress test)
