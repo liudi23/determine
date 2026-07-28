@@ -20,6 +20,10 @@ def main() -> None:
     run_p.add_argument("question")
     run_p.add_argument("--corpus", default=None, help="JSONL corpus path (default: sample)")
 
+    report_p = sub.add_parser("report", help="render a run as a readable HTML report")
+    report_p.add_argument("run_id", nargs="?", default=None,
+                          help="run id (default: latest run)")
+
     fetch_p = sub.add_parser("fetch", help="harvest hep-ph abstracts from arXiv")
     fetch_p.add_argument("--max-results", type=int, default=5000)
     fetch_p.add_argument("--query", default="cat:hep-ph",
@@ -29,6 +33,12 @@ def main() -> None:
 
     args = ap.parse_args()
     cfg = load_settings()
+
+    if args.cmd == "report":
+        from determine.report import report_run
+        out = report_run(cfg.runs_dir, args.run_id)
+        print(f"report written: {out}\nopen it with:  open {out}")
+        return
 
     if args.cmd == "fetch":
         from determine.corpus.fetch_arxiv import fetch_hepph

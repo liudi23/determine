@@ -114,7 +114,8 @@ def decompose_node(state: RunState, cfg: Settings) -> RunState:
     return state
 
 
-def verify_blind(claim: Claim, retriever: Retriever, cfg: Settings) -> Verdict:
+def verify_blind(claim: Claim, retriever: Retriever, cfg: Settings,
+                 retrieval_log: list | None = None) -> Verdict:
     """Independent verifier: sees ONLY the bare claim + its own fresh retrieval.
 
     Model-independence: in live mode this calls cfg.verifier (different family from the
@@ -122,6 +123,10 @@ def verify_blind(claim: Claim, retriever: Retriever, cfg: Settings) -> Verdict:
     """
     if cfg.dry_run:
         passages = {p.passage_id: p for p in retriever.search(claim.text, k=cfg.top_k_passages)}
+        if retrieval_log is not None:
+            retrieval_log.append(RetrievalRecord(
+                for_id=claim.claim_id, queries=[claim.text],
+                passage_ids=list(passages.keys())))
         if passages:
             pid, p = next(iter(passages.items()))
             quote = p.text[:40]
@@ -131,7 +136,7 @@ def verify_blind(claim: Claim, retriever: Retriever, cfg: Settings) -> Verdict:
             return v
         return Verdict(label=VerdictLabel.NEI, reason=NEIReason.NO_EVIDENCE, model="dry-run")
     from determine.verify.verifier import verify_live
-    return verify_live(claim, retriever, cfg, _llm(cfg, "verifier"))
+    return verify_live(claim, retriever, cfg, _llm(cfg, "verifier"), retrieval_log)
 
 
 def numeric_check(claim: Claim, cfg: Settings) -> Claim:
@@ -176,7 +181,8 @@ def run_pipeline(question: str, cfg: Settings, retriever: Retriever) -> RunState
         state = answer_node(state, cfg, retriever)
         state = decompose_node(state, cfg)
         for claim in state.claims:
-            claim.verdict = verify_blind(claim, retriever, cfg)   # blind: claim only
+            claim.verdict = verify_blind(claim, retriever, cfg,
+                                         state.retrieval_log)   # blind: claim only
             if claim.type in (ClaimType.NUMERIC, ClaimType.COMPARATIVE):
                 numeric_check(claim, cfg)
         state = fuse_and_score(state)
@@ -209,7 +215,7 @@ def build_langgraph(cfg: Settings, retriever: Retriever):
     def verify_all(d: dict) -> dict:
         state = RunState.model_validate(d)
         for claim in state.claims:
-            claim.verdict = verify_blind(claim, retriever, cfg)
+            claim.verdict = verify_blind(claim, retriever, cfg, state.retrieval_log)
             if claim.type in (ClaimType.NUMERIC, ClaimType.COMPARATIVE):
                 numeric_check(claim, cfg)
         return state.model_dump()

@@ -57,12 +57,23 @@ def _model_name(llm: LLM) -> str:
     return getattr(llm, "model", "unknown")
 
 
-def verify_live(claim: Claim, retriever: Retriever, cfg: Settings, llm: LLM) -> Verdict:
-    """Fresh retrieval → judge → quote guard (1 retry) → bounded query reformulation."""
+def verify_live(claim: Claim, retriever: Retriever, cfg: Settings, llm: LLM,
+                retrieval_log: list | None = None) -> Verdict:
+    """Fresh retrieval → judge → quote guard (1 retry) → bounded query reformulation.
+
+    Every search (including reformulations) is appended to retrieval_log so the
+    persisted run state records what the verifier looked for, not just what it cited.
+    """
+    from determine.schema import RetrievalRecord
+
     query = claim.text
     iterations = 0
     for attempt in range(cfg.budgets.retrieval_retries_per_claim + 1):
         passages = {p.passage_id: p for p in retriever.search(query, k=cfg.top_k_passages)}
+        if retrieval_log is not None:
+            retrieval_log.append(RetrievalRecord(
+                for_id=claim.claim_id, queries=[query],
+                passage_ids=list(passages.keys())))
         if not passages:
             iterations += 1
             query = _reformulate(claim, llm)
