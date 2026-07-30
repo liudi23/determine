@@ -20,16 +20,30 @@ def main() -> None:
     run_p.add_argument("question")
     run_p.add_argument("--corpus", default=None, help="JSONL corpus path (default: sample)")
 
+    report_p = sub.add_parser("report", help="render a run as a readable HTML report")
+    report_p.add_argument("run_id", nargs="?", default=None,
+                          help="run id (default: latest run)")
+
     fetch_p = sub.add_parser("fetch", help="harvest hep-ph abstracts from arXiv")
     fetch_p.add_argument("--max-results", type=int, default=5000)
+    fetch_p.add_argument("--query", default="cat:hep-ph",
+                         help='arXiv query, e.g. \'all:"sterile neutrino" AND cat:hep-ph\'')
+    fetch_p.add_argument("--out", default="data/corpus/hepph.jsonl",
+                         help="output JSONL (use a topic_*.jsonl then scripts/merge_corpus.py)")
 
     args = ap.parse_args()
     cfg = load_settings()
 
+    if args.cmd == "report":
+        from determine.report import report_run
+        out = report_run(cfg.runs_dir, args.run_id)
+        print(f"report written: {out}\nopen it with:  open {out}")
+        return
+
     if args.cmd == "fetch":
         from determine.corpus.fetch_arxiv import fetch_hepph
-        n = fetch_hepph(max_results=args.max_results)
-        print(f"harvested {n} abstracts")
+        n = fetch_hepph(query=args.query, max_results=args.max_results, out_path=args.out)
+        print(f"harvested {n} abstracts -> {args.out}")
         return
 
     corpus_path = args.corpus or str(Path(cfg.corpus_dir) / "sample.jsonl")

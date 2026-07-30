@@ -106,7 +106,7 @@ def extract_json(text: str) -> dict | list:
     Tolerates ```json fences and prose before/after. Raises ValueError if none found.
     """
     text = text.strip()
-    fence = re.search(r"```(?:json)?\s*(.*?)```", text, re.S)
+    fence = re.search(r"```(?:json)?\s*(.*?)```", text, re.DOTALL)
     if fence:
         text = fence.group(1).strip()
     # fast path

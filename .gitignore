@@ -5,6 +5,7 @@ __pycache__/
 .ruff_cache/
 .coverage
 runs/*.json
+runs/*.html
 data/corpus/*.jsonl
 !data/corpus/sample.jsonl
 data/kg.sqlite

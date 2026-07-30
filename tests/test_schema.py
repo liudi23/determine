@@ -1,7 +1,12 @@
 import pytest
 
 from determine.schema import (
-    Claim, ClaimType, NEIReason, RunState, Verdict, VerdictLabel,
+    Claim,
+    ClaimType,
+    NEIReason,
+    RunState,
+    Verdict,
+    VerdictLabel,
 )
 
 
