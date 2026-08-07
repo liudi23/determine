@@ -31,8 +31,22 @@ def decompose_live(state: RunState, cfg: Settings, llm: LLM) -> RunState:
     if not state.answer.text or state.answer.text.startswith("NOT ENOUGH EVIDENCE"):
         state.claims = []
         return state
-    raw = llm.complete(SYSTEM, f"Answer to decompose:\n{state.answer.text}", max_tokens=2500)
-    data = extract_json(raw)
+    user_msg = f"Answer to decompose:\n{state.answer.text}"
+    raw = llm.complete(SYSTEM, user_msg, max_tokens=4000)
+    try:
+        data = extract_json(raw)
+    except ValueError:
+        raw = llm.complete(
+            SYSTEM,
+            user_msg + '\n\nREMINDER: respond ONLY with the JSON object '
+                       '{"claims": [...]} — return {"claims": []} if there is nothing '
+                       "checkable. Never plain prose.",
+            max_tokens=4000)
+        try:
+            data = extract_json(raw)
+        except ValueError:
+            state.claims = []  # nothing parseable → no checkable claims (honest empty)
+            return state
     claims = []
     for c in data["claims"]:
         q = c.get("quantity")

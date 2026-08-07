@@ -20,7 +20,9 @@ The cite-or-abstain contract:
 Return ONLY JSON:
 {"sentences": [{"text": str, "cites": [str]}]}
 where "cites" contains the passage ids (given in brackets) supporting that sentence.
-A sentence that is pure abstention ("the literature does not establish X") may have empty cites."""
+A sentence that is pure abstention ("the literature does not establish X") may have empty cites.
+ALWAYS return the JSON object, even when the passages cannot answer the question at all —
+in that case the abstention statements ARE the sentences. Never reply in plain prose."""
 
 
 def gather_passages(state: RunState, retriever: Retriever, cfg: Settings) -> dict[str, Passage]:
@@ -41,9 +43,26 @@ def answer_live(state: RunState, cfg: Settings, retriever: Retriever, llm: LLM) 
                               sentence_citations={})
         return state
     block = "\n\n".join(f"[{p.passage_id}] {p.text}" for p in list(passages.values())[:16])
-    raw = llm.complete(SYSTEM, f"Question: {state.question}\n\nEvidence passages:\n{block}",
-                       max_tokens=2500)
-    data = extract_json(raw)
+    user_msg = f"Question: {state.question}\n\nEvidence passages:\n{block}"
+    raw = llm.complete(SYSTEM, user_msg, max_tokens=4000)
+    try:
+        data = extract_json(raw)
+    except ValueError:
+        # model answered in prose (often while abstaining) — one retry with feedback
+        raw2 = llm.complete(
+            SYSTEM,
+            user_msg + '\n\nREMINDER: respond ONLY with the JSON object '
+                       '{"sentences": [...]}. If the passages cannot answer the question, '
+                       "put your abstention statement(s) in 'sentences' with empty cites — "
+                       "never plain prose.",
+            max_tokens=4000)
+        try:
+            data = extract_json(raw2)
+        except ValueError:
+            # honest degradation: keep the prose as an uncited answer; downstream
+            # decomposition/verification will treat its claims strictly
+            state.answer = Answer(text=raw.strip(), sentence_citations={})
+            return state
     sentences = data["sentences"]
     valid_ids = set(passages)
     text = " ".join(s["text"] for s in sentences)

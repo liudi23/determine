@@ -106,15 +106,19 @@ def extract_json(text: str) -> dict | list:
     Tolerates ```json fences and prose before/after. Raises ValueError if none found.
     """
     text = text.strip()
-    fence = re.search(r"```(?:json)?\s*(.*?)```", text, re.DOTALL)
-    if fence:
+    # fenced block — tolerate a MISSING closing fence (truncated responses)
+    fence = re.search(r"```(?:json)?\s*(.*?)(?:```|$)", text, re.DOTALL)
+    if fence and fence.group(1).strip():
         text = fence.group(1).strip()
     # fast path
     try:
         return json.loads(text)
     except json.JSONDecodeError:
         pass
-    # scan for first balanced {...} or [...]
+    # scan for balanced {...} / [...] candidates; return the LARGEST parseable one,
+    # so a truncated outer object salvages its biggest complete substructure rather
+    # than whatever tiny fragment happens to come first
+    best: tuple[int, dict | list] | None = None
     for opener, closer in [("{", "}"), ("[", "]")]:
         start = text.find(opener)
         while start != -1:
@@ -139,8 +143,14 @@ def extract_json(text: str) -> dict | list:
                     depth -= 1
                     if depth == 0:
                         try:
-                            return json.loads(text[start:i + 1])
+                            parsed = json.loads(text[start:i + 1])
+                            size = i + 1 - start
+                            if best is None or size > best[0]:
+                                best = (size, parsed)
                         except json.JSONDecodeError:
-                            break
+                            pass
+                        break
             start = text.find(opener, start + 1)
+    if best is not None:
+        return best[1]
     raise ValueError(f"no parseable JSON in LLM response: {text[:120]!r}")

@@ -78,7 +78,12 @@ def verify_live(claim: Claim, retriever: Retriever, cfg: Settings, llm: LLM,
             iterations += 1
             query = _reformulate(claim, llm)
             continue
-        verdict = _judge(claim, passages, llm, cfg)
+        try:
+            verdict = _judge(claim, passages, llm, cfg)
+        except Exception:
+            # unparseable judge response → honest degraded verdict, never a crash
+            verdict = Verdict(label=VerdictLabel.NEI, reason=NEIReason.TOOL_ERROR,
+                              confidence="low", model=f"live:{_model_name(llm)}")
         iterations += 1
 
         # quote guard: one retry with explicit feedback, then degrade honestly

@@ -56,19 +56,25 @@ def plan_node(state: RunState, cfg: Settings) -> RunState:
 
 
 def plan_gate(state: RunState, cfg: Settings) -> RunState:
-    """Rule checks first (pure code), then ≤1 LLM review revision."""
+    """Rule checks, pure code. Repairs what it can, warns about the rest — a style
+    violation NEVER kills a run (accept-with-warning per MVP proposal §1.1); only a
+    structurally unusable plan (no steps at all) is fatal."""
+    if not state.plan:
+        raise AssertionError("planner produced no steps")
     ids = {s.id for s in state.plan}
     problems = []
-    if not 3 <= len(state.plan) <= 6 and not cfg.dry_run:
-        problems.append("plan length outside 3-6")
+    if not 3 <= len(state.plan) <= 8:
+        problems.append(f"plan length {len(state.plan)} outside 3-8")
     for s in state.plan:
-        if any(i not in ids for i in s.inputs):
-            problems.append(f"{s.id}: unknown input")
+        bad = [i for i in s.inputs if i not in ids]
+        if bad:
+            s.inputs = [i for i in s.inputs if i in ids]
+            problems.append(f"{s.id}: dropped unknown inputs {bad}")
         if s.type == StepType.GATHER and not s.retrieval_seeds:
-            problems.append(f"{s.id}: GATHER without seeds")
-    state.plan_review_status = "accepted" if not problems else f"rejected: {problems}"
-    if problems:
-        raise AssertionError(f"plan gate failed: {problems}")
+            s.retrieval_seeds = [s.goal]  # repair: seed retrieval from the goal text
+            problems.append(f"{s.id}: GATHER without seeds — seeded from goal")
+    state.plan_review_status = ("accepted" if not problems
+                                else f"accepted_with_warnings: {problems}")
     return state
 
 
