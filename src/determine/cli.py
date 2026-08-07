@@ -18,7 +18,8 @@ def main() -> None:
 
     run_p = sub.add_parser("run", help="run the pipeline on a question")
     run_p.add_argument("question")
-    run_p.add_argument("--corpus", default=None, help="JSONL corpus path (default: sample)")
+    run_p.add_argument("--corpus", default=None,
+                       help="JSONL corpus path (default: hepph.jsonl if harvested, else sample)")
 
     report_p = sub.add_parser("report", help="render a run as a readable HTML report")
     report_p.add_argument("run_id", nargs="?", default=None,
@@ -46,8 +47,14 @@ def main() -> None:
         print(f"harvested {n} abstracts -> {args.out}")
         return
 
-    corpus_path = args.corpus or str(Path(cfg.corpus_dir) / "sample.jsonl")
+    if args.corpus:
+        corpus_path = args.corpus
+    else:  # default: the real harvested corpus when present, sample as fallback
+        main_corpus = Path(cfg.corpus_dir) / "hepph.jsonl"
+        corpus_path = str(main_corpus if main_corpus.exists()
+                          else Path(cfg.corpus_dir) / "sample.jsonl")
     corpus = load_corpus(corpus_path) if Path(corpus_path).exists() else []
+    print(f"corpus: {corpus_path} ({len(corpus)} abstracts)")
     retriever = BM25Retriever(corpus)
     state = run_pipeline(args.question, cfg, retriever)
     print(json.dumps({
